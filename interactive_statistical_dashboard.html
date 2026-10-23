@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevStats // Terminal de Análisis Estadístico</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts for Monospace Code Aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['"Fira Code"', 'monospace'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            black: '#0a0d14',
+                            dark: '#0f172a',
+                            card: '#182235',
+                            border: '#2a3b5c',
+                            cyan: '#00f0ff',
+                            green: '#00ff66',
+                            purple: '#7000ff',
+                            pink: '#ff0055',
+                            yellow: '#ffbe0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Cyberpunk Scrollbar & Glow Effects */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0d14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+        .glow-green {
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.25);
+        }
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(112, 0, 255, 0.25);
+        }
+        
+        .border-glow-cyan {
+            border-color: rgba(0, 240, 255, 0.5);
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.2) 50%,
+                rgba(0, 0, 0, 0.2)
+            );
+            background-size: 100% 4px;
+        }
+    </style>
+</head>
+<body class="bg-cyber-black text-slate-200 font-sans min-h-screen flex flex-col selection:bg-cyber-cyan selection:text-black">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-cyber-border bg-cyber-dark/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-cyber-cyan/10 p-2 rounded-lg border border-cyber-cyan/30 text-cyber-cyan">
+                    <i data-lucide="terminal" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-mono font-bold text-lg tracking-wider text-white flex items-center gap-2">
+                        DevStats<span class="text-xs px-2 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40">v2.0.26</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 font-mono">Engine: Estructura & Métricas Lógicas</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Info -->
+            <div class="hidden md:flex items-center gap-6 font-mono text-xs text-slate-400">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyber-green animate-pulse"></span>
+                    <span>Pipeline: <span class="text-cyber-green font-semibold">ONLINE</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="cpu" class="w-4 h-4 text-cyber-cyan"></i>
+                    <span>Memoria: <span id="memory-stats" class="text-white">12.4 MB</span></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+
+        <!-- SECTION 1: Architecture & Pipeline Module -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- JavaScript Schema (moduloEstadistica) -->
+            <div class="lg:col-span-5 bg-cyber-dark border border-cyber-border rounded-xl p-5 shadow-xl relative overflow-hidden flex flex-col">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-cyber-cyan/5 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="flex items-center justify-between pb-3 border-b border-cyber-border/60 mb-4">
+                    <h2 class="font-mono font-bold text-cyber-cyan flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <i data-lucide="code" class="w-4 h-4"></i> Schema: moduloEstadistica
+                    </h2>
+                    <span class="text-[10px] font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded">JSON Config</span>
+                </div>
+                <div class="font-mono text-xs bg-cyber-black p-4 rounded-lg border border-slate-800 text-emerald-400 overflow-x-auto flex-1 shadow-inner">
+                    <pre><code id="schema-code-display">// Estructura general de la investigación
+const moduloEstadistica = {
+    tipoCiencia: "Matemática / Formal",
+    escalasDatos: [
+        "Nominal", "Ordinal", 
+        "Intervalar", "De Razón"
+    ],
+    ramas: ["Descriptiva", "Inferencial"],
+    proposito: "Manejo, análisis y predicción basada en datos"
+};</code></pre>
+                </div>
+                <div class="mt-4 pt-3 border-t border-cyber-border/40 flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>Instancia cargada en memoria</span>
+                    <button onclick="triggerSchemaLog()" class="text-cyber-cyan hover:underline flex items-center gap-1">
+                        <i data-lucide="play" class="w-3 h-3"></i> console.log()
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pipeline Execution Stages (investigacionEstadistica) -->
+            <div class="lg:col-span-7 bg-cyber-dark border border-cyber-border rounded-xl p-5 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between pb-3 border-b border-cyber-border/60 mb-4">
+                    <h2 class="font-mono font-bold text-cyber-green flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <i data-lucide="git-commit" class="w-4 h-4"></i> Pipeline: investigacionEstadistica()
+                    </h2>
+                    <span class="text-[10px] font-mono bg-cyber-green/10 text-cyber-green border border-cyber-green/30 px-2 py-0.5 rounded">Async Pipeline</span>
+                </div>
+
+                <!-- Pipeline Steps Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 my-auto">
+                    <!-- Step 1 -->
+                    <div class="pipeline-step p-3 rounded-lg border border-slate-800 bg-cyber-black/60 hover:border-cyber-cyan transition-all text-center group cursor-pointer" onclick="logStepInfo(1)">
+                        <div class="w-7 h-7 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan flex items-center justify-center font-mono text-xs font-bold mx-auto mb-2 group-hover:scale-110 transition-transform">1</div>
+                        <h3 class="font-mono text-xs font-bold text-white mb-1">Planeamiento</h3>
+                        <p class="text-[10px] text-slate-400 font-mono">Schema & Setup</p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="pipeline-step p-3 rounded-lg border border-slate-800 bg-cyber-black/60 hover:border-cyber-cyan transition-all text-center group cursor-pointer" onclick="logStepInfo(2)">
+                        <div class="w-7 h-7 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan flex items-center justify-center font-mono text-xs font-bold mx-auto mb-2 group-hover:scale-110 transition-transform">2</div>
+                        <h3 class="font-mono text-xs font-bold text-white mb-1">Recopilación</h3>
+                        <p class="text-[10px] text-slate-400 font-mono">Data Fetching</p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="pipeline-step p-3 rounded-lg border border-slate-800 bg-cyber-black/60 hover:border-cyber-cyan transition-all text-center group cursor-pointer" onclick="logStepInfo(3)">
+                        <div class="w-7 h-7 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan flex items-center justify-center font-mono text-xs font-bold mx-auto mb-2 group-hover:scale-110 transition-transform">3</div>
+                        <h3 class="font-mono text-xs font-bold text-white mb-1">Organización</h3>
+                        <p class="text-[10px] text-slate-400 font-mono">Clean & UI</p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="pipeline-step p-3 rounded-lg border border-slate-800 bg-cyber-black/60 hover:border-cyber-cyan transition-all text-center group cursor-pointer" onclick="logStepInfo(4)">
+                        <div class="w-7 h-7 rounded-full bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan flex items-center justify-center font-mono text-xs font-bold mx-auto mb-2 group-hover:scale-110 transition-transform">4</div>
+                        <h3 class="font-mono text-xs font-bold text-white mb-1">Análisis</h3>
+                        <p class="text-[10px] text-slate-400 font-mono">Math Logic</p>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div class="pipeline-step p-3 rounded-lg border border-slate-800 bg-cyber-black/60 hover:border-cyber-cyan transition-all text-center group cursor-pointer" onclick="logStepInfo(5)">
+                        <div class="w-7 h-7 rounded-full bg-cyber-green/10 border border-cyber-green/40 text-cyber-green flex items-center justify-center font-mono text-xs font-bold mx-auto mb-2 group-hover:scale-110 transition-transform">5</div>
+                        <h3 class="font-mono text-xs font-bold text-white mb-1">Reporte</h3>
+                        <p class="text-[10px] text-slate-400 font-mono">Deploy Final</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-cyber-black/80 rounded-lg border border-slate-800 font-mono text-xs text-slate-300 flex items-center justify-between">
+                    <span id="pipeline-status-text"><span class="text-cyber-green">&gt;</span> Pipeline compilado y listo para ingesta.</span>
+                    <button onclick="runPipelineSimulation()" class="bg-cyber-cyan/20 hover:bg-cyber-cyan/30 text-cyber-cyan border border-cyber-cyan/50 px-3 py-1 rounded text-xs transition-colors flex items-center gap-1">
+                        <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Ejecutar Script
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Data Ingestion & Variables Form -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Ingestion Form -->
+            <div class="lg:col-span-4 bg-cyber-dark border border-cyber-border rounded-xl p-5 shadow-xl">
+                <div class="flex items-center justify-between pb-3 border-b border-cyber-border/60 mb-4">
+                    <h2 class="font-mono font-bold text-cyber-purple flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Ingesta de Registros
+                    </h2>
+                    <span class="text-[10px] font-mono bg-cyber-purple/10 text-cyber-purple border border-cyber-purple/30 px-2 py-0.5 rounded">Data Input</span>
+                </div>
+
+                <form id="data-form" class="space-y-4 font-mono text-xs" onsubmit="handleAddRecord(event)">
+                    <!-- Cualitativa Nominal -->
+                    <div>
+                        <label class="block text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Lenguaje / Tech</span>
+                            <span class="text-[9px] text-cyber-cyan">[Cualitativa Nominal]</span>
+                        </label>
+                        <select id="input-tech" class="w-full bg-cyber-black border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyber-cyan focus:outline-none transition-colors">
+                            <option value="JavaScript">JavaScript</option>
+                            <option value="Python">Python</option>
+                            <option value="TypeScript">TypeScript</option>
+                            <option value="Rust">Rust</option>
+                            <option value="Go">Go</option>
+                            <option value="C++">C++</option>
+                        </select>
+                    </div>
+
+                    <!-- Cualitativa Ordinal -->
+                    <div>
+                        <label class="block text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Prioridad / Server</span>
+                            <span class="text-[9px] text-cyber-purple">[Cualitativa Ordinal]</span>
+                        </label>
+                        <select id="input-priority" class="w-full bg-cyber-black border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyber-purple focus:outline-none transition-colors">
+                            <option value="Baja">Baja</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <!-- Cuantitativa Discreta -->
+                    <div>
+                        <label class="block text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Peticiones / Min (int)</span>
+                            <span class="text-[9px] text-cyber-green">[Cuantitativa Discreta]</span>
+                        </label>
+                        <input type="number" id="input-requests" min="1" max="1000" value="120" required class="w-full bg-cyber-black border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyber-green focus:outline-none transition-colors">
+                    </div>
+
+                    <!-- Cuantitativa Continua -->
+                    <div>
+                        <label class="block text-slate-400 mb-1 flex items-center justify-between">
+                            <span>Latencia / ms (float)</span>
+                            <span class="text-[9px] text-cyber-yellow">[Cuantitativa Continua]</span>
+                        </label>
+                        <input type="number" step="0.01" id="input-latency" min="0.1" max="500" value="24.5" required class="w-full bg-cyber-black border border-slate-700 rounded-lg p-2.5 text-white focus:border-cyber-yellow focus:outline-none transition-colors">
+                    </div>
+
+                    <div class="pt-2 flex gap-2">
+                        <button type="submit" class="flex-1 bg-cyber-cyan hover:bg-cyan-400 text-black font-bold py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 glow-cyan">
+                            <i data-lucide="database" class="w-4 h-4"></i> Insertar Registro
+                        </button>
+                        <button type="button" onclick="loadSampleData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-lg transition-colors border border-slate-700" title="Cargar Muestra">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Stats Metrics Overview & Data Table -->
+            <div class="lg:col-span-8 bg-cyber-dark border border-cyber-border rounded-xl p-5 shadow-xl flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between pb-3 border-b border-cyber-border/60 mb-4">
+                        <h2 class="font-mono font-bold text-cyber-yellow flex items-center gap-2 text-sm uppercase tracking-wider">
+                            <i data-lucide="calculator" class="w-4 h-4"></i> Métricas Calculadas en Tiempo Real
+                        </h2>
+                        <span class="text-[10px] font-mono bg-cyber-yellow/10 text-cyber-yellow border border-cyber-yellow/30 px-2 py-0.5 rounded">Live Metrics</span>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 font-mono">
+                        <div class="bg-cyber-black p-3 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400">TOTAL MUESTRAS</p>
+                            <p id="stat-total" class="text-xl font-bold text-white mt-1">0</p>
+                        </div>
+                        <div class="bg-cyber-black p-3 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400">MEDIA LATENCIA</p>
+                            <p id="stat-mean" class="text-xl font-bold text-cyber-cyan mt-1">0.00 ms</p>
+                        </div>
+                        <div class="bg-cyber-black p-3 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400">MEDIANA LATENCIA</p>
+                            <p id="stat-median" class="text-xl font-bold text-cyber-green mt-1">0.00 ms</p>
+                        </div>
+                        <div class="bg-cyber-black p-3 rounded-lg border border-slate-800">
+                            <p class="text-[10px] text-slate-400">MODA TECH</p>
+                            <p id="stat-mode" class="text-xl font-bold text-cyber-purple mt-1">N/A</p>
+                        </div>
+                    </div>
+
+                    <!-- Raw Data Table -->
+                    <div class="overflow-x-auto rounded-lg border border-slate-800 max-h-48 overflow-y-auto">
+                        <table class="w-full font-mono text-xs text-left text-slate-300">
+                            <thead class="bg-cyber-black text-slate-400 sticky top-0 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-2">ID</th>
+                                    <th class="p-2">Tech (Nominal)</th>
+                                    <th class="p-2">Prioridad (Ordinal)</th>
+                                    <th class="p-2">Req/Min (Discreta)</th>
+                                    <th class="p-2">Latencia (Continua)</th>
+                                    <th class="p-2 text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table-body" class="divide-y divide-slate-800/60 bg-cyber-black/40">
+                                <!-- Data Rows rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-cyber-border/40 flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span id="data-count-text">0 registros cargados en memoria</span>
+                    <button onclick="clearDataset()" class="text-cyber-pink hover:underline flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Limpiar Datasets
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Frequency Table & Graphical Render -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Frequency Table Component -->
+            <div class="lg:col-span-6 bg-cyber-dark border border-cyber-border rounded-xl p-5 shadow-xl">
+                <div class="flex items-center justify-between pb-3 border-b border-cyber-border/60 mb-4">
+                    <h2 class="font-mono font-bold text-cyber-cyan flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <i data-lucide="table" class="w-4 h-4"></i> Tabla de Frecuencias (Techs)
+                    </h2>
+                    <span class="text-[10px] font-mono bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30 px-2 py-0.5 rounded">UI Render</span>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-slate-800">
+                    <table class="w-full font-mono text-xs text-left text-slate-300">
+                        <thead class="bg-cyber-black text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="p-2.5">Variable (x)</th>
+                                <th class="p-2.5">Frecuencia (fi)</th>
+                                <th class="p-2.5">Porcentaje (%)</th>
+                                <th class="p-2.5">Distribución Visual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="freq-table-body" class="divide-y divide-slate-800/60 bg-cyber-black/30">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Canvas Charts Component -->
+            <div class="lg:col-span-6 bg-cyber-dark border border-cyber-border rounded-xl p-5 shadow-xl flex flex-col justify-between">
+                <div class="flex items-center justify-between pb-3 border-b border-cyber-border/60 mb-2">
+                    <h2 class="font-mono font-bold text-cyber-green flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Render Visual (Chart Canvas)
+                    </h2>
+                    <span class="text-[10px] font-mono bg-cyber-green/10 text-cyber-green border border-cyber-green/30 px-2 py-0.5 rounded">Graphics</span>
+                </div>
+
+                <div class="relative h-64 w-full pt-2">
+                    <canvas id="cyberChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Live Simulated Dev Console -->
+        <section class="bg-cyber-black border border-cyber-border rounded-xl p-5 shadow-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <div class="flex items-center gap-2">
+                    <div class="flex gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+                    </div>
+                    <span class="font-mono text-xs font-bold text-slate-400 ml-2 flex items-center gap-1">
+                        <i data-lucide="terminal" class="w-3.5 h-3.5 text-cyber-cyan"></i> Console Logs Output
+                    </span>
+                </div>
+                <button onclick="clearConsoleLog()" class="text-[11px] font-mono text-slate-400 hover:text-white transition-colors">
+                    Limpiar Consola
+                </button>
+            </div>
+
+            <div id="console-output" class="font-mono text-xs h-40 overflow-y-auto space-y-1.5 p-2 bg-black/60 rounded border border-slate-900 text-slate-300">
+                <p class="text-slate-500">// Terminal iniciada. Listo para registrar datos y ejecutar pipelines.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-cyber-border/60 bg-cyber-dark/40 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center font-mono text-xs text-slate-500">
+            DevStats Engine &copy; 2026 // Diseñado con Lógica de Programación & Estadística Aplicada
+        </div>
+    </footer>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Global Dataset Storage
+        let dataset = [];
+        let nextId = 1;
+        let chartInstance = null;
+
+        // Configuration Object (moduloEstadistica)
+        const moduloEstadistica = {
+            tipoCiencia: "Matemática / Formal",
+            escalasDatos: ["Nominal", "Ordinal", "Intervalar", "De Razón"],
+            ramas: ["Descriptiva", "Inferencial"],
+            proposito: "Manejo, análisis y predicción basada en datos"
+        };
+
+        // Initialize Application
+        window.onload = function() {
+            lucide.createIcons();
+            initChart();
+            loadSampleData();
+            logToConsole("system", "Entorno cargado correctamente. Schema `moduloEstadistica` montado en memoria.");
+        };
+
+        // Simulated Logging Utility
+        function logToConsole(type, message, data = null) {
+            const consoleBox = document.getElementById('console-output');
+            const time = new Date().toLocaleTimeString();
+            let colorClass = "text-slate-300";
+            let prefix = "&gt;";
+
+            if (type === "system") { colorClass = "text-cyber-cyan"; prefix = "[SYS]"; }
+            if (type === "pipeline") { colorClass = "text-cyber-green"; prefix = "[PIPE]"; }
+            if (type === "ingest") { colorClass = "text-cyber-purple"; prefix = "[DATA]"; }
+            if (type === "error") { colorClass = "text-cyber-pink"; prefix = "[ERR]"; }
+
+            let html = `<div class="font-mono ${colorClass}"><span class="text-slate-600">[${time}]</span> ${prefix} ${message}</div>`;
+            
+            if (data) {
+                html += `<pre class="text-[11px] text-emerald-400 bg-black/40 p-2 rounded my-1 border border-slate-800/80 overflow-x-auto">${JSON.stringify(data, null, 2)}</pre>`;
+            }
+
+            consoleBox.innerHTML += html;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function clearConsoleLog() {
+            document.getElementById('console-output').innerHTML = '<p class="text-slate-500">// Consola limpiada.</p>';
+        }
+
+        // Schema Console Log Event
+        function triggerSchemaLog() {
+            logToConsole("system", "console.log(moduloEstadistica);", moduloEstadistica);
+        }
+
+        // Pipeline Step Click Log
+        function logStepInfo(step) {
+            const stepsInfo = {
+                1: "Etapa 1: Planeamiento -> Configuración del esquema, variables a capturar y schema base.",
+                2: "Etapa 2: Recopilación -> Captura de datos crudos mediante formulario o API fetch.",
+                3: "Etapa 3: Organización -> Limpieza de datos (Data Cleaning) y ordenamiento en tablas.",
+                4: "Etapa 4: Análisis -> Cálculo de métricas (Media, Mediana, Moda) y lógica estadística.",
+                5: "Etapa 5: Reporte -> Generación de gráficos visuales y resumen ejecutable."
+            };
+            logToConsole("pipeline", stepsInfo[step]);
+            document.getElementById('pipeline-status-text').innerHTML = `<span class="text-cyber-cyan">&gt;</span> Info Etapa ${step}: ${stepsInfo[step]}`;
+        }
+
+        // Async Pipeline Simulation
+        async function runPipelineSimulation() {
+            logToConsole("pipeline", "Iniciando la ejecución asíncrona: const investigacionEstadistica = async () => ...");
+            
+            const statusEl = document.getElementById('pipeline-status-text');
+            statusEl.innerHTML = `<span class="text-cyber-yellow animate-pulse">&gt;</span> Ejecutando planeamiento()...`;
+            await new Promise(r => setTimeout(r, 600));
+
+            statusEl.innerHTML = `<span class="text-cyber-yellow animate-pulse">&gt;</span> Ejecutando recopilacion()... [Data size: ${dataset.length}]`;
+            await new Promise(r => setTimeout(r, 600));
+
+            statusEl.innerHTML = `<span class="text-cyber-yellow animate-pulse">&gt;</span> Ejecutando organizacion(rawData)...`;
+            await new Promise(r => setTimeout(r, 600));
+
+            statusEl.innerHTML = `<span class="text-cyber-yellow animate-pulse">&gt;</span> Ejecutando analisis(cleanData)...`;
+            await new Promise(r => setTimeout(r, 600));
+
+            statusEl.innerHTML = `<span class="text-cyber-green">&gt;</span> generarReporte(results) finalizado con éxito!`;
+            logToConsole("pipeline", "Pipeline completado con éxito. Resultados sincronizados.", {
+                totalRegistros: dataset.length,
+                status: "200 OK"
+            });
+        }
+
+        // Load Initial Sample Data
+        function loadSampleData() {
+            dataset = [
+                { id: 1, tech: "JavaScript", priority: "Alta", requests: 180, latency: 18.2 },
+                { id: 2, tech: "Python", priority: "Media", requests: 95, latency: 45.6 },
+                { id: 3, tech: "JavaScript", priority: "Alta", requests: 210, latency: 15.4 },
+                { id: 4, tech: "TypeScript", priority: "Baja", requests: 130, latency: 22.1 },
+                { id: 5, tech: "Rust", priority: "Crítica", requests: 310, latency: 4.8 },
+                { id: 6, tech: "JavaScript", priority: "Media", requests: 160, latency: 19.0 },
+                { id: 7, tech: "Go", priority: "Alta", requests: 250, latency: 9.3 }
+            ];
+            nextId = 8;
+            updateDashboard();
+            logToConsole("ingest", "Dataset de prueba cargado con éxito.", dataset);
+        }
+
+        // Add Record Handlers
+        function handleAddRecord(e) {
+            e.preventDefault();
+            const tech = document.getElementById('input-tech').value;
+            const priority = document.getElementById('input-priority').value;
+            const requests = parseInt(document.getElementById('input-requests').value);
+            const latency = parseFloat(document.getElementById('input-latency').value);
+
+            const record = { id: nextId++, tech, priority, requests, latency };
+            dataset.push(record);
+
+            updateDashboard();
+            logToConsole("ingest", `Nuevo registro agregado (ID: ${record.id})`, record);
+        }
+
+        function deleteRecord(id) {
+            dataset = dataset.filter(item => item.id !== id);
+            updateDashboard();
+            logToConsole("system", `Registro con ID ${id} eliminado.`);
+        }
+
+        function clearDataset() {
+            dataset = [];
+            updateDashboard();
+            logToConsole("system", "Dataset vaciado completamente.");
+        }
+
+        // Calculate Statistical Metrics
+        function updateDashboard() {
+            renderDataTable();
+            calculateMetrics();
+            renderFrequencyTableAndChart();
+            document.getElementById('data-count-text').innerText = `${dataset.length} registros cargados en memoria`;
+        }
+
+        function renderDataTable() {
+            const tbody = document.getElementById('data-table-body');
+            tbody.innerHTML = '';
+
+            if (dataset.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500 font-mono">Sin datos disponibles. Agrega registros.</td></tr>`;
+                return;
+            }
+
+            dataset.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-2 text-slate-400">#${item.id}</td>
+                    <td class="p-2 font-bold text-cyber-cyan">${item.tech}</td>
+                    <td class="p-2"><span class="px-1.5 py-0.5 rounded text-[10px] ${getPriorityBadge(item.priority)}">${item.priority}</span></td>
+                    <td class="p-2 text-slate-300">${item.requests} req/m</td>
+                    <td class="p-2 text-cyber-yellow">${item.latency.toFixed(1)} ms</td>
+                    <td class="p-2 text-right">
+                        <button onclick="deleteRecord(${item.id})" class="text-slate-500 hover:text-cyber-pink transition-colors">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function getPriorityBadge(priority) {
+            switch (priority) {
+                case 'Baja': return 'bg-slate-800 text-slate-300';
+                case 'Media': return 'bg-blue-900/60 text-blue-300 border border-blue-700';
+                case 'Alta': return 'bg-amber-900/60 text-amber-300 border border-amber-700';
+                case 'Crítica': return 'bg-red-900/60 text-red-300 border border-red-700';
+                default: return 'bg-slate-800 text-slate-300';
+            }
+        }
+
+        function calculateMetrics() {
+            const total = dataset.length;
+            document.getElementById('stat-total').innerText = total;
+
+            if (total === 0) {
+                document.getElementById('stat-mean').innerText = "0.00 ms";
+                document.getElementById('stat-median').innerText = "0.00 ms";
+                document.getElementById('stat-mode').innerText = "N/A";
+                return;
+            }
+
+            // Mean (Media - Latencia)
+            const sumLatency = dataset.reduce((acc, item) => acc + item.latency, 0);
+            const meanLatency = sumLatency / total;
+            document.getElementById('stat-mean').innerText = `${meanLatency.toFixed(2)} ms`;
+
+            // Median (Mediana - Latencia)
+            const sortedLatency = [...dataset].map(i => i.latency).sort((a, b) => a - b);
+            let medianLatency = 0;
+            const mid = Math.floor(sortedLatency.length / 2);
+            if (sortedLatency.length % 2 === 0) {
+                medianLatency = (sortedLatency[mid - 1] + sortedLatency[mid]) / 2;
+            } else {
+                medianLatency = sortedLatency[mid];
+            }
+            document.getElementById('stat-median').innerText = `${medianLatency.toFixed(2)} ms`;
+
+            // Mode (Moda - Tecnologías)
+            const counts = {};
+            dataset.forEach(item => { counts[item.tech] = (counts[item.tech] || 0) + 1; });
+            let maxCount = 0;
+            let modeTech = "N/A";
+            for (const tech in counts) {
+                if (counts[tech] > maxCount) {
+                    maxCount = counts[tech];
+                    modeTech = tech;
+                }
+            }
+            document.getElementById('stat-mode').innerText = modeTech;
+        }
+
+        function renderFrequencyTableAndChart() {
+            const tbody = document.getElementById('freq-table-body');
+            tbody.innerHTML = '';
+
+            const total = dataset.length;
+            if (total === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500 font-mono">Sin datos para renderizar frecuencia.</td></tr>`;
+                updateChart([], []);
+                return;
+            }
+
+            // Frequency calculation for Technologies (Nominal Variable)
+            const freqMap = {};
+            dataset.forEach(item => { freqMap[item.tech] = (freqMap[item.tech] || 0) + 1; });
+
+            const labels = Object.keys(freqMap);
+            const frequencies = Object.values(freqMap);
+
+            labels.forEach((tech, index) => {
+                const count = frequencies[index];
+                const percentage = ((count / total) * 100).toFixed(1);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-white">${tech}</td>
+                    <td class="p-2.5 text-cyber-cyan font-bold">${count}</td>
+                    <td class="p-2.5 text-cyber-yellow">${percentage}%</td>
+                    <td class="p-2.5 w-2/5">
+                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                            <div class="bg-cyber-cyan h-full rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateChart(labels, frequencies);
+        }
+
+        // Initialize Chart.js Component
+        function initChart() {
+            const ctx = document.getElementById('cyberChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Frecuencia de Uso (Tech)',
+                        data: [],
+                        backgroundColor: 'rgba(0, 240, 255, 0.4)',
+                        borderColor: '#00f0ff',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        hoverBackgroundColor: 'rgba(0, 255, 102, 0.6)',
+                        hoverBorderColor: '#00ff66'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8', font: { family: 'Fira Code', size: 11 } }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', font: { family: 'Fira Code', size: 10 } },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#94a3b8', font: { family: 'Fira Code', size: 10 }, stepSize: 1 },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(labels, data) {
+            if (!chartInstance) return;
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = data;
+            chartInstance.update();
+        }
+    </script>
+</body>
+</html>
